@@ -4,7 +4,7 @@ from collections import Counter
 
 from PyPDF2 import PdfFileReader
 
-PUNCTUATIONS = """!()[]{};:\"\,<>\./?@#$%^&;*_~™»"""
+PUNCTUATIONS = """!()[]{};:\"\,<>\./?@#$%^&;*_~™«»"""
 CONSONANTS = "BCDFGHJKLMNPQRSTVWXZ"
 
 class ZipfReader:
@@ -15,6 +15,12 @@ class ZipfReader:
     @property
     def num_pages(self):
         return self.pdf_reader.numPages
+
+    def preprocess(self, word_list: List[str]) -> List[str]:
+        """
+        This is used by Lemma Zipf Readers to reduce words to their lemma forms.
+        """
+        return word_list
 
     def page_to_word_list(self, page_index: int=0) -> List[str]:
         page = self.pdf_reader.getPage(page_index)
@@ -31,6 +37,8 @@ class ZipfReader:
         #    - Wherever we see a hyphen denoting continuing (e.g. "some\n-thing"), we rejoin.
         # 2. We also remove all punctuation and numbers (replacing this with spaces)
         # TODO: remove urls
+        # TODO: Count ' differently (e.g. "dell'importanza" -> "dell'", "importanza" or something similar)
+        # TODO: Roman numerals
 
         cleaned_text = ""
 
@@ -49,10 +57,9 @@ class ZipfReader:
         raw_list = cleaned_text.split(" ")
 
         # Get rid of nonce words (i.e., empty strings and consonants)
-        # TODO: Include minimum word length
         cleaned_list = list(filter(lambda word: len(word) > 0 and word not in CONSONANTS, raw_list))
 
-        return cleaned_list
+        return self.preprocess(cleaned_list)
 
 
     def page_range_to_word_freqs(self, initial_page: int, final_page: int) -> Counter:

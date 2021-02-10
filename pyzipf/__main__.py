@@ -1,6 +1,7 @@
 import argparse
 
 from zipfify import ZipfReader
+from lemmatize import ItalianLemmatizedReader
 
 parser = argparse.ArgumentParser(description="Convert pdfs into word-frequency lists.")
 
@@ -42,7 +43,13 @@ parser.add_argument(
 )
 parser.set_defaults(duplicates=False)
 
-
+parser.add_argument(
+    "-l",
+    "--language",
+    help="To specify language. Leave blank for generic (non-lemmatized) handling.",
+    choices=[None, "it"],
+    default=None
+)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -50,8 +57,13 @@ if __name__ == "__main__":
     filepath = args.filepath
     show_duplicates = args.duplicates
     show_numbers = args.numbers
+    language = args.language
 
     zipf_reader = ZipfReader(filepath)
+
+    if language == "it":
+        print("Preparing Italian lemmatizer...")
+        zipf_reader = ItalianLemmatizedReader(filepath)
 
     if args.sections:
         sections = list(map(lambda s: int(s), args.sections)) # Convert to ints

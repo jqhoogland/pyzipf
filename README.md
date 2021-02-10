@@ -10,6 +10,12 @@ However, when we're interested in reading specialized literature in a target lan
 
 With PyZipf you can easily convert pdfs into word lists for this purpose.
 
-### Note
-- This currently does not identify distinct lemmas (i.e., root words). So "go", "goes", and "went" would show up as distinct in an English text. I will work on expanding this functionality in the future
-- I'm planning on including the functionality to create a word list per chapter. So you can start reading before you've mastered all the vocabulary.
+### How to use
+Run ``python pyzipf --help`` to get an overview of the options.
+
+
+### Lemma frequency lists
+Ideally, you have some grasp of the grammar, in which case it suffices to learn the lemmas (i.e. root words).
+
+
+I'm currently learning Italian, so that's the only lemmatizer I've set up (with the help of spaCy). But it's easy to extend this to other languages so stay tuned.
