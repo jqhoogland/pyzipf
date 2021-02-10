@@ -132,17 +132,3 @@ class ZipfReader:
             final_pretty_print.append(pretty_print_by_section[i])
 
         return final_pretty_print
-
-
-
-if __name__ == "__main__":
-    assert len(sys.argv) == 2, "Must provide exactly one argument."
-
-    filepath = sys.argv[1]
-
-
-    zipf_reader = ZipfReader(filepath)
-
-    #print(zipf_reader.get_word_freqs())
-    #print(zipf_reader.pretty_print_word_freqs())
-    print(*zipf_reader.pretty_print_word_freqs_by_section([3, 4, 5]), sep="\n")
