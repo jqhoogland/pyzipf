@@ -4,7 +4,7 @@ from collections import Counter
 
 from PyPDF2 import PdfFileReader
 
-PUNCTUATIONS = """!()[]{};:\"\,<>\./?@#$%^&;*_~"""
+PUNCTUATIONS = """!()[]{};:\"\,<>\./?@#$%^&;*_~™»"""
 CONSONANTS = "BCDFGHJKLMNPQRSTVWXZ"
 
 class ZipfReader:
@@ -65,8 +65,32 @@ class ZipfReader:
             for word in word_list:
                 word_counter[word] += 1
 
-        return word_counter.most_common(100)
+        return word_counter
 
+
+    def get_word_frequencies(self):
+        return self.page_range_to_word_frequencies(0, self.num_pages)
+
+    def get_word_frequencies_by_section(self, sections: Union[int, List[int]]):
+        """
+        ``sections`` is either:
+        1. An int for the number of pages per section, or
+        2. A list of the indicies of the first page of every section.
+        """
+        word_freq_lists = []
+
+        if type(sections) == int:
+            for i in range(self.num_pages // sections + 1):
+                word_freq_lists.append(self.page_range_to_word_frequencies(i * sections, (i + 1) * sections))
+
+
+        elif type(sections) == list:
+            for i in range(len(sections) -1 ):
+                word_freq_lists.append(self.page_range_to_word_frequencies(sections[i], sections[i + 1]))
+        else:
+            raise ValueError("``sections`` must be either ``int`` or ``list``")
+
+        return word_freq_lists
 
 if __name__ == "__main__":
     assert len(sys.argv) == 2, "Must provide exactly one argument."
@@ -76,4 +100,5 @@ if __name__ == "__main__":
 
     zipf_reader = ZipfReader(filepath)
 
-    print(zipf_reader.page_range_to_word_frequencies(0, 20))
+    # print(zipf_reader.get_word_frequencies())
+    print(*zipf_reader.get_word_frequencies_by_section([0, 20, 40]))
