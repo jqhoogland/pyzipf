@@ -1,14 +1,20 @@
 import sys, os
 from typing import Union, List, Dict
+from collections import Counter
 
 from PyPDF2 import PdfFileReader
 
 PUNCTUATIONS = """!()[]{};:\"\,<>\./?@#$%^&;*_~"""
+CONSONANTS = "BCDFGHJKLMNPQRSTVWXZ"
 
 class ZipfReader:
     def __init__(self, filepath: Union[str, "os.PathLike[Any]"]):
         self.filepath = filepath
         self.pdf_reader = PdfFileReader(filepath)
+
+    @property
+    def num_pages(self):
+        return self.pdf_reader.numPages
 
     def page_to_word_list(self, page_index: int=0) -> List[str]:
         page = self.pdf_reader.getPage(page_index)
@@ -42,17 +48,24 @@ class ZipfReader:
 
         raw_list = cleaned_text.split(" ")
 
-        # Get rid of nonce words (i.e., empty strings)
+        # Get rid of nonce words (i.e., empty strings and consonants)
         # TODO: Include minimum word length
-        cleaned_list = list(filter(lambda word: len(word) > 0, raw_list))
+        cleaned_list = list(filter(lambda word: len(word) > 0 and word not in CONSONANTS, raw_list))
 
         return cleaned_list
 
-    def page_to_word_frequencies(self, page_index: int=0) -> Dict[str, int]:
-        pass
 
-    def document_to_word_frequencies(self) -> Dict[str, int]:
-        pass
+    def page_range_to_word_frequencies(self, initial_page: int, final_page: int) -> Dict[str, int]:
+        word_counter = Counter()
+
+        # If ``final_page`` is greater than the number of pages in the document, we take the document length instead.
+        for page_index in range(min(self.num_pages, final_page)):
+            word_list = self.page_to_word_list(page_index)
+
+            for word in word_list:
+                word_counter[word] += 1
+
+        return word_counter.most_common(100)
 
 
 if __name__ == "__main__":
@@ -63,4 +76,4 @@ if __name__ == "__main__":
 
     zipf_reader = ZipfReader(filepath)
 
-    print(zipf_reader.page_to_word_list(10))
+    print(zipf_reader.page_range_to_word_frequencies(0, 20))
