@@ -1,5 +1,5 @@
 import sys, os
-from typing import Union, List, Dict
+from typing import Union, List, Tuple
 from collections import Counter
 
 from PyPDF2 import PdfFileReader
@@ -55,7 +55,7 @@ class ZipfReader:
         return cleaned_list
 
 
-    def page_range_to_word_frequencies(self, initial_page: int, final_page: int) -> Dict[str, int]:
+    def page_range_to_word_freqs(self, initial_page: int, final_page: int) -> Counter:
         word_counter = Counter()
 
         # If ``final_page`` is greater than the number of pages in the document, we take the document length instead.
@@ -68,10 +68,10 @@ class ZipfReader:
         return word_counter
 
 
-    def get_word_frequencies(self):
-        return self.page_range_to_word_frequencies(0, self.num_pages)
+    def get_word_freqs(self) -> Counter:
+        return self.page_range_to_word_freqs(0, self.num_pages)
 
-    def get_word_frequencies_by_section(self, sections: Union[int, List[int]]):
+    def get_word_freqs_by_section(self, sections: Union[int, List[int]]) -> List[Counter]:
         """
         ``sections`` is either:
         1. An int for the number of pages per section, or
@@ -81,16 +81,49 @@ class ZipfReader:
 
         if type(sections) == int:
             for i in range(self.num_pages // sections + 1):
-                word_freq_lists.append(self.page_range_to_word_frequencies(i * sections, (i + 1) * sections))
+                word_freq_lists.append(self.page_range_to_word_freqs(i * sections, (i + 1) * sections))
 
 
         elif type(sections) == list:
             for i in range(len(sections) -1 ):
-                word_freq_lists.append(self.page_range_to_word_frequencies(sections[i], sections[i + 1]))
+                word_freq_lists.append(self.page_range_to_word_freqs(sections[i], sections[i + 1]))
         else:
             raise ValueError("``sections`` must be either ``int`` or ``list``")
 
         return word_freq_lists
+
+
+    def _pretty_print_freq_list(self, word_freqs: Counter, show_numbers: bool=True) -> str:
+        word_freq_tuples = word_freqs.items()
+
+        if show_numbers:
+            return "".join(list(map(lambda wordfreq: f"{wordfreq[0].strip()} {wordfreq[1]}\n", word_freq_tuples)))
+
+        return "".join(list(map(lambda wordfreq: f"{wordfreq[0].strip()}\n", word_freq_tuples)))
+
+
+    def pretty_print_word_freqs(self, show_numbers: bool=True) -> str:
+        word_freqs = self.get_word_freqs()
+
+        return self._pretty_print_freq_list(word_freqs, show_numbers)
+
+    def pretty_print_word_freqs_by_section(self, sections: Union[int, List[int]], show_numbers: bool=True) -> str:
+        word_freq_lists = self.get_word_freqs_by_section(sections)
+
+        pretty_print_by_section = list(map(lambda word_freqs: self._pretty_print_freq_list(word_freqs, show_numbers), word_freq_lists))
+
+        final_pretty_print = []
+
+        section_indices = sections if type(sections) == list else list(range(0, self.num_pages // sections))
+
+        for i in range(len(pretty_print_by_section)):
+
+            final_pretty_print.append(f"\n\n---\n\n# {section_indices[i]}-{section_indices[i+1]}\n\n")
+            final_pretty_print.append(pretty_print_by_section[i])
+
+        return final_pretty_print
+
+
 
 if __name__ == "__main__":
     assert len(sys.argv) == 2, "Must provide exactly one argument."
@@ -100,5 +133,5 @@ if __name__ == "__main__":
 
     zipf_reader = ZipfReader(filepath)
 
-    # print(zipf_reader.get_word_frequencies())
-    print(*zipf_reader.get_word_frequencies_by_section([0, 20, 40]))
+    #print(zipf_reader.pretty_print_word_freqs())
+    print(*zipf_reader.pretty_print_word_freqs_by_section([2, 3, 4], False))
