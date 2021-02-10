@@ -21,9 +21,9 @@ class ZipfReader:
 
         raw_text = page.extractText()
 
-        # First we replace line breaks with spaces and get rid of empty lines.
+        # First we replace line breaks with spaces, get rid of empty lines, and convert to lowercase
 
-        dense_text = raw_text.replace("\n", "")
+        dense_text = raw_text.replace("\n", "").lower()
 
         # 1. ``extractText`` often omits spaces at line breaks.
         #    - Wherever we see a digit, we skip.
@@ -67,34 +67,44 @@ class ZipfReader:
 
         return word_counter
 
-
     def get_word_freqs(self) -> Counter:
         return self.page_range_to_word_freqs(0, self.num_pages)
 
-    def get_word_freqs_by_section(self, sections: Union[int, List[int]]) -> List[Counter]:
+    def get_word_freqs_by_section(self, sections: Union[int, List[int]], show_duplicates: bool=False) -> List[Counter]:
         """
         ``sections`` is either:
         1. An int for the number of pages per section, or
         2. A list of the indicies of the first page of every section.
+
+        If show_duplicates is false, we only count a word in the first section we encounter it.
+        Otherwise, we separately count its occurences in each section.
+        NOTE: The count for any word will still only be the count within that particular section.
         """
+        global_counter = Counter()
         word_freq_lists = []
 
-        if type(sections) == int:
-            for i in range(self.num_pages // sections + 1):
-                word_freq_lists.append(self.page_range_to_word_freqs(i * sections, (i + 1) * sections))
+        section_indices = sections if type(sections) == list else list(range(0, self.num_pages, sections))
+
+        for i in range(len(section_indices) - 1):
+            # TODO: Test
+            section_counter = self.page_range_to_word_freqs(section_indices[i], section_indices[i + 1])
+
+            if not show_duplicates:
+                for word in global_counter.keys():
+                    global_counter[word] += section_counter[word]
+                    # We set the already encountered word counts to 0, then remove non-positive count items with unary addition.
+                    section_counter[word] = 0
+
+                global_counter += section_counter
 
 
-        elif type(sections) == list:
-            for i in range(len(sections) -1 ):
-                word_freq_lists.append(self.page_range_to_word_freqs(sections[i], sections[i + 1]))
-        else:
-            raise ValueError("``sections`` must be either ``int`` or ``list``")
+            word_freq_lists.append(+section_counter)
 
         return word_freq_lists
 
 
     def _pretty_print_freq_list(self, word_freqs: Counter, show_numbers: bool=True) -> str:
-        word_freq_tuples = word_freqs.items()
+        word_freq_tuples = word_freqs.most_common()
 
         if show_numbers:
             return "".join(list(map(lambda wordfreq: f"{wordfreq[0].strip()} {wordfreq[1]}\n", word_freq_tuples)))
@@ -107,18 +117,18 @@ class ZipfReader:
 
         return self._pretty_print_freq_list(word_freqs, show_numbers)
 
-    def pretty_print_word_freqs_by_section(self, sections: Union[int, List[int]], show_numbers: bool=True) -> str:
-        word_freq_lists = self.get_word_freqs_by_section(sections)
+    def pretty_print_word_freqs_by_section(self, sections: Union[int, List[int]], show_numbers: bool=True, show_duplicates: bool=False) -> str:
+        word_freq_lists = self.get_word_freqs_by_section(sections, show_duplicates)
 
         pretty_print_by_section = list(map(lambda word_freqs: self._pretty_print_freq_list(word_freqs, show_numbers), word_freq_lists))
 
         final_pretty_print = []
 
-        section_indices = sections if type(sections) == list else list(range(0, self.num_pages // sections))
+        section_indices = sections if type(sections) == list else list(range(0, self.num_pages, sections))
 
         for i in range(len(pretty_print_by_section)):
 
-            final_pretty_print.append(f"\n\n---\n\n# {section_indices[i]}-{section_indices[i+1]}\n\n")
+            final_pretty_print.append(f"\n\n---\n\n# {section_indices[i]}-{section_indices[i+1]}\n\n---\n")
             final_pretty_print.append(pretty_print_by_section[i])
 
         return final_pretty_print
@@ -133,5 +143,6 @@ if __name__ == "__main__":
 
     zipf_reader = ZipfReader(filepath)
 
+    #print(zipf_reader.get_word_freqs())
     #print(zipf_reader.pretty_print_word_freqs())
-    print(*zipf_reader.pretty_print_word_freqs_by_section([2, 3, 4], False))
+    print(*zipf_reader.pretty_print_word_freqs_by_section([3, 4, 5]), sep="\n")
