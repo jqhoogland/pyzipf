@@ -4,8 +4,8 @@ from collections import Counter
 
 from PyPDF2 import PdfFileReader
 
-PUNCTUATIONS = """!()[]{};:\"\,<>\./?@#$%^&;*_~™«»"""
-CONSONANTS = "BCDFGHJKLMNPQRSTVWXZ"
+PUNCTUATIONS = """!()[]{};:\"\,<>\./?@#$%^&;*_~™«»+-"""
+CONSONANTS = "bcdfghjklmnpqrstvwxz"
 
 class ZipfReader:
     def __init__(self, filepath: Union[str, "os.PathLike[Any]"]):
@@ -23,6 +23,8 @@ class ZipfReader:
         return word_list
 
     def page_to_word_list(self, page_index: int=0) -> List[str]:
+        # TODO: Consider that sentences and words may continue from one page to the next.
+
         page = self.pdf_reader.getPage(page_index)
 
         raw_text = page.extractText()
@@ -45,7 +47,7 @@ class ZipfReader:
         for i in range(len(dense_text) - 1):
             if dense_text[i].isdigit():
                 continue
-            elif dense_text[i] in PUNCTUATIONS:
+            elif dense_text[i].lower() in PUNCTUATIONS:
                 cleaned_text += ' '
             elif dense_text[i] == '-' and dense_text[i + 1].isalpha():
                 continue
