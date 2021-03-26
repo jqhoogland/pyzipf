@@ -141,7 +141,7 @@ cython_debug/
 **.\#**
 
 /sources/**
-
+/ignore/it.txt
 
 
 
