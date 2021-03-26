@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List, Union
 from collections import Counter
 
@@ -52,11 +53,27 @@ class LemmaZipfReader(ZipfReader):
         ZipfReader.__init__(self, filepath)
         self.language = language
 
+        ignore_relpath = f"ignore/{language}.txt"
+        ignore_path = os.path.join(os.getcwd(), ignore_relpath)
+        if os.path.isfile(ignore_path):
+            with open(ignore_path, "r") as f:
+                self.ignore = list(map(lambda s: s.strip(), f.readlines()))
+
+        else:
+            self.ignore = []
+
         try:
             self.nlp = spacy.load(self.nlp_dataset)
         except OSError:
             raise OSError(f"You must first download the spaCy model `{language}_core_news_sm`. To do so, run `python -m spacy download {language}_core_news_sm`")
 
+    def page_range_to_word_freqs(self, initial_page: int, final_page: int) -> Counter:
+        word_counter = super().page_range_to_word_freqs(initial_page, final_page)
+
+        for word in self.ignore:
+            del word_counter[word]
+
+        return word_counter
 
     @property
     def nlp_dataset(self):
