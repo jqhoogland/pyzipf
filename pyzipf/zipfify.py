@@ -25,43 +25,47 @@ class ZipfReader:
     def page_to_word_list(self, page_index: int=0) -> List[str]:
         # TODO: Consider that sentences and words may continue from one page to the next.
 
-        page = self.pdf_reader.getPage(page_index)
+        try:
+            page = self.pdf_reader.getPage(page_index)
 
-        raw_text = page.extractText()
+            raw_text = page.extractText()
 
-        # First we replace line breaks with spaces, get rid of empty lines, and convert to lowercase
+            # First we replace line breaks with spaces, get rid of empty lines, and convert to lowercase
 
-        dense_text = raw_text.replace("\n", "").lower()
+            dense_text = raw_text.replace("\n", "").lower()
 
-        # 1. ``extractText`` often omits spaces at line breaks.
-        #    - Wherever we see a digit, we skip.
-        #    - Wherever we see an uppercase directly following a lowercase, we insert a space.
-        #    - Wherever we see a hyphen denoting continuing (e.g. "some\n-thing"), we rejoin.
-        # 2. We also remove all punctuation and numbers (replacing this with spaces)
-        # TODO: remove urls
-        # TODO: Count ' differently (e.g. "dell'importanza" -> "dell'", "importanza" or something similar)
-        # TODO: Roman numerals
+            # 1. ``extractText`` often omits spaces at line breaks.
+            #    - Wherever we see a digit, we skip.
+            #    - Wherever we see an uppercase directly following a lowercase, we insert a space.
+            #    - Wherever we see a hyphen denoting continuing (e.g. "some\n-thing"), we rejoin.
+            # 2. We also remove all punctuation and numbers (replacing this with spaces)
+            # TODO: remove urls
+            # TODO: Count ' differently (e.g. "dell'importanza" -> "dell'", "importanza" or something similar)
+            # TODO: Roman numerals
 
-        cleaned_text = ""
+            cleaned_text = ""
 
-        for i in range(len(dense_text) - 1):
-            if dense_text[i].isdigit():
-                continue
-            elif dense_text[i].lower() in PUNCTUATIONS:
-                cleaned_text += ' '
-            elif dense_text[i] == '-' and dense_text[i + 1].isalpha():
-                continue
-            elif not dense_text[i].isupper() and dense_text[i + 1].isupper():
-                cleaned_text += dense_text[i] + ' '
-            else:
-                cleaned_text += dense_text[i]
+            for i in range(len(dense_text) - 1):
+                if dense_text[i].isdigit():
+                    continue
+                elif dense_text[i].lower() in PUNCTUATIONS:
+                    cleaned_text += ' '
+                elif dense_text[i] == '-' and dense_text[i + 1].isalpha():
+                    continue
+                elif not dense_text[i].isupper() and dense_text[i + 1].isupper():
+                    cleaned_text += dense_text[i] + ' '
+                else:
+                    cleaned_text += dense_text[i]
 
-        raw_list = cleaned_text.split(" ")
+            raw_list = cleaned_text.split(" ")
 
-        # Get rid of nonce words (i.e., empty strings and consonants)
-        cleaned_list = list(filter(lambda word: len(word) > 0 and word not in CONSONANTS, raw_list))
+            # Get rid of nonce words (i.e., empty strings and consonants)
+            cleaned_list = list(filter(lambda word: len(word) > 0 and word not in CONSONANTS, raw_list))
 
-        return self.preprocess(cleaned_list)
+            return self.preprocess(cleaned_list)
+
+        except:
+            return []
 
 
     def page_range_to_word_freqs(self, initial_page: int, final_page: int) -> Counter:
